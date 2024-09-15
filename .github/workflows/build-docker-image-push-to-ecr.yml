@@ -53,8 +53,11 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          echo "Deploying ecr image to EC2..."
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} 'docker pull ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 && docker run -d -p 4000:4000 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1'
+          echo "Deploying ECR image to EC2..."
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} \
+            'aws ecr get-login-password --region ap-southeast-3 | docker login --username AWS --password-stdin ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com && \
+            docker pull ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 && \
+            docker run -d -p 4000:4000 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
