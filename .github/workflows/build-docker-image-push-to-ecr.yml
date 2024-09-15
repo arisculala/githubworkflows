@@ -1,8 +1,10 @@
 name: Publish and Deploy Prod
 
+#on:
+#  release:
+#    types: [published]  # Only triggers when a release is published
 on:
-  release:
-    types: [published]  # Only triggers when a release is published
+  workflow_dispatch:
 
 jobs:
   deploy:
