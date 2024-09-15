@@ -1,0 +1,39 @@
+name: Publish and Deploy Prod
+
+on:
+  release:
+    types: [published]  # Only triggers when a release is published
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      with:
+        ref: develop  # Ensures the 'develop' branch is checked out
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+      with:
+        region: ap-southeast-3
+
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }} .
+        docker tag ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }} ${{ secrets.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }}
+        docker push ${{ secrets.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }}
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    #- name: Deploy to EC2
+    #  run: |
+    #    ssh -o StrictHostKeyChecking=no ec2-user@<ec2-public-ip> 'docker pull ${{ secrets.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }} && docker run -d -p 80:80 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }}'
+    #  env:
+    #    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
