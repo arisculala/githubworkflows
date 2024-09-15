@@ -1,7 +1,14 @@
 name: Publish and Deploy Prod
 
 on:
-  workflow_dispatch:
+  release:
+    types: [published]  # Trigger when a release is published
+  workflow_dispatch:  # Allows manual triggering from the GitHub Actions UI
+    inputs:
+      release_version:
+        description: 'The version of the release'
+        required: true
+        default: '0.0.1'
 
 jobs:
   deploy:
@@ -37,11 +44,11 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           echo "Building Docker image..."
-          docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 .
+          docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.inputs.release_version }} .
           echo "Tagging Docker image..."
-          docker tag ${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1
+          docker tag ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.inputs.release_version }} ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.inputs.release_version }}
           echo "Pushing Docker image..."
-          docker push ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1
+          docker push ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.inputs.release_version }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -56,8 +63,8 @@ jobs:
           echo "Deploying ECR image to EC2..."
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} \
             'aws ecr get-login-password --region ap-southeast-3 | docker login --username AWS --password-stdin ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com && \
-            docker pull ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 && \
-            docker run -d -p 4000:4000 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1'
+            docker pull ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.inputs.release_version }} && \
+            docker run -d -p 4000:4000 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.inputs.release_version }}'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
