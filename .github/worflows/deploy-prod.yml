@@ -11,7 +11,7 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v2
       with:
-        ref: feat/merc42-automate-publish-deployment
+        ref: develop  # Ensures the 'develop' branch is checked out
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
@@ -23,16 +23,16 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t seaseedsite-prod-seaseed-landing-page-ecr:0.0.1 .
-        docker tag seaseedsite-prod-seaseed-landing-page-ecr:0.0.1 436279157579.dkr.ecr.ap-southeast-3.amazonaws.com/seaseedsite-prod-seaseed-landing-page-ecr:0.0.1
-        docker push 436279157579.dkr.ecr.ap-southeast-3.amazonaws.com/seaseedsite-prod-seaseed-landing-page-ecr:0.0.1
+        docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }} .
+        docker tag ${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }} ${{ secrets.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }}
+        docker push ${{ secrets.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }}
       env:
-        AWS_ACCESS_KEY_ID: AKIAQXUIX3CK3EIT4JK7
-        AWS_SECRET_ACCESS_KEY: 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
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     #- name: Deploy to EC2
     #  run: |
-    #    ssh -o StrictHostKeyChecking=no ec2-user@<ec2-public-ip> 'docker pull <account-id>.dkr.ecr.us-east-1.amazonaws.com/<ecr-repository-name>:${{ github.event.release.tag_name }} && docker run -d -p 80:80 <account-id>.dkr.ecr.us-east-1.amazonaws.com/<ecr-repository-name>:${{ github.event.release.tag_name }}'
+    #    ssh -o StrictHostKeyChecking=no ec2-user@<ec2-public-ip> 'docker pull ${{ secrets.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }} && docker run -d -p 80:80 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.event.release.tag_name }}'
     #  env:
     #    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
     #    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
