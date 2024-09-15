@@ -8,48 +8,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v2
-      with:
-        ref: main  # Ensures the 'main' branch is checked out
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          ref: main # Ensures the 'main' branch is checked out
 
-    - name: Set up Node.js 20
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-    - name: Configure AWS CLI
-      run: |
-        aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws configure set region ap-southeast-3
+      - name: Configure AWS CLI
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ap-southeast-3
 
-    - name: Log in to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v1
-      with:
-        mask-password: true
-        registry-type: private
-        skip-logout: false
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: true
+          registry-type: private
+          skip-logout: false
 
-    - name: Build and Push Docker Image
-      run: |
-        echo "Building Docker image..."
-        docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 .
-        echo "Tagging Docker image..."
-        docker tag ${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1
-        echo "Pushing Docker image..."
-        docker push ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Build and Push Docker Image
+        run: |
+          echo "Building Docker image..."
+          docker build -t ${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 .
+          echo "Tagging Docker image..."
+          docker tag ${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1
+          echo "Pushing Docker image..."
+          docker push ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    - name: Deploy to EC2
-     run: |
-       echo "Deploying ecr image to EC2..."
-       ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} 'docker pull ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 && docker run -d -p 4000:4000 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1'
-     env:
-       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Deploy to EC2
+        run: |
+          echo "Deploying ecr image to EC2..."
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} 'docker pull ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1 && docker run -d -p 4000:4000 ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-southeast-3.amazonaws.com/${{ secrets.ECR_REPOSITORY_NAME }}:0.0.1'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
